@@ -1,0 +1,3 @@
+[submodule "reference/subtext-playground"]
+	path = reference/subtext-playground
+	url = https://github.com/jeqcho/subtext-playground

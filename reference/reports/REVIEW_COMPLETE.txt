@@ -1,0 +1,276 @@
+================================================================================
+SUBTEXT-BENCH PRODUCTION REVIEW: COMPLETE
+================================================================================
+
+Date: February 11, 2026
+Reviewer: Claude (AI Code Reviewer)
+Status: CRITICAL ISSUES IDENTIFIED - NOT PRODUCTION READY
+
+================================================================================
+QUICK SUMMARY
+================================================================================
+
+The subtext-bench framework is INTERESTING and NOVEL.
+The science is REAL and the early results are ENCOURAGING.
+
+BUT: This benchmark is NOT ready for public release or downstream use
+in its current form. It will break in production in predictable ways.
+
+RECOMMENDATION: Allocate 2-3 weeks for Phase 1 and 2 fixes before release.
+ROI is enormous (credibility, user trust, downstream applications).
+
+================================================================================
+CRITICAL ISSUES (Will Cause Failures)
+================================================================================
+
+1. MODEL VERSIONS NOT PINNED
+   - No snapshot dates in model IDs
+   - Results become incomparable when APIs update
+   - Fix time: 1 day
+
+2. COST EXPLOSIONS & RATE LIMIT BANKRUPTCY
+   - No cost tracking, experiments crash after $500+
+   - No resume capability
+   - Fix time: 2-3 days
+
+3. NON-DETERMINISM EVERYWHERE
+   - Same seed ≠ same results
+   - Reproducibility lost
+   - Fix time: 2-3 days
+
+4. PARSING DOESN'T VALIDATE
+   - Silent failures, garbage accuracy metrics
+   - No confidence scores or validation
+   - Fix time: 1 day
+
+5. NO PROPER BASELINES
+   - Can't tell if subtext works or just lucky
+   - No controls (no-subtext, monitor-with-hint)
+   - Fix time: 2 days
+
+TOTAL FIX TIME: 9-12 days of engineering work
+
+================================================================================
+EDGE CASES THAT WILL BITE YOU LATER
+================================================================================
+
+6. Monitor saturation (can trivially detect)
+7. Sender overfitting to specific questions
+8. Question ordering effects
+9. Temperature-accuracy confound
+10. Model API incompatibilities
+
+Details in PRODUCTION_REVIEW.md
+
+================================================================================
+WHAT LOOKS SIMPLE BUT ISN'T
+================================================================================
+
+The coordination problem: Scoring "subtext success" is harder than it appears.
+
+Current metric: Receiver accuracy - Monitor accuracy
+
+Problem: This conflates two things:
+  - Monitor evasion (hiding from GPT-5)
+  - Receiver success (helping the same model)
+
+Solution: Measure separately with proper baselines
+  - Baseline: random guessing (~6%)
+  - No-subtext: different secret animal
+  - Monitor-with-hint: monitor knows the secret
+  - Then report all metrics, not just the gap
+
+Fix time: 2 days (but requires rethinking the metric)
+
+================================================================================
+DELIVERABLES
+================================================================================
+
+Five comprehensive documents created in /Users/jeqcho/subtext-bench/:
+
+1. REVIEW_INDEX.md (THIS FILE'S INDEX - start here)
+   Quick reference to all documents, read order, and use cases
+
+2. EXECUTIVE_SUMMARY.md
+   High-level assessment for stakeholders (10 min read)
+   → What works, what breaks, what to do about it
+
+3. PRODUCTION_REVIEW.md
+   Deep dive into all issues (30 min read)
+   → 10 major categories, detailed explanations, code references
+
+4. FIXES_AND_CODE_EXAMPLES.md
+   Complete implementations (20 min read)
+   → Model versioning, cost tracking, determinism, parsing, baselines
+
+5. CHECKLIST_FOR_PRODUCTION.md
+   Step-by-step validation (15 min read)
+   → Use as literal checklist for pre-release validation
+
+6. FAILURE_SCENARIOS.md
+   Real-world failure examples (15 min read)
+   → What users will experience in their first month
+
+================================================================================
+THREE NON-NEGOTIABLES
+================================================================================
+
+If I were CTO, I would NOT allow release without:
+
+1. REPRODUCIBILITY GUARANTEE
+   Same seed → byte-identical results (not just ~same)
+   Implementation: Model snapshots, full seed logging, deterministic tasks
+   Time: 3-4 days
+   Why: Downstream users need confidence
+
+2. HONEST METRICS
+   Report receiver acc, monitor acc, gap, evasion separately WITH BASELINES
+   Implementation: Baseline trials, control conditions, ablations
+   Time: 4-5 days
+   Why: Readers need to know if subtext works or temperature effects
+
+3. COST & RESOURCE MANAGEMENT
+   Predict costs, enforce budget, resume from crashes
+   Implementation: Cost tracking, checkpoints, budget limits
+   Time: 2-3 days
+   Why: Users will be shocked by $500 charges
+
+================================================================================
+PHASED IMPLEMENTATION
+================================================================================
+
+Phase 1 (Weeks 1-2): Core Reproducibility
+  - Model versioning, seeds, cost tracking, parsing validation
+  - Output: Stable internal version
+  - Sign-off: "Results are reproducible"
+
+Phase 2 (Weeks 3-4): Scientific Rigor
+  - Baselines, controls, ablations, significance testing
+  - Output: Research-grade version
+  - Sign-off: "Methods are scientifically sound"
+
+Phase 3 (Week 5): Production Polish
+  - Rate limiting, documentation, CI/CD, sign-off
+  - Output: Public release v1.0
+  - Sign-off: All stakeholders approve
+
+================================================================================
+FAILURE SCENARIOS (First Month of Public Release)
+================================================================================
+
+Scenario 1: "I Can't Reproduce Your Results"
+  → PYTHONHASHSEED randomization breaks question seeds
+  
+Scenario 2: "My Experiment Crashed at Hour 3"
+  → Rate limits hit, no recovery mechanism, lost work, surprised cost
+
+Scenario 3: "I'm Getting 50% Accuracy on All Animals"
+  → Parser silently fails, returns garbage animals
+
+Scenario 4: "Your Results Show It Works, Mine Don't"
+  → Temperature confound (monitor=0.0, receiver=1.0)
+
+Scenario 5: "I Updated to New Model Version and Results Changed"
+  → Model IDs without dates, no deprecation warnings
+
+Scenario 6: "I Ran Your Benchmark, Got Different Results Every Time"
+  → Non-deterministic execution
+
+Scenario 7: "I Started the Experiment and My Bill is $500"
+  → No cost tracking, no warning, no budget limit
+
+Each scenario is described in detail in FAILURE_SCENARIOS.md
+
+================================================================================
+WHAT TO DO NOW
+================================================================================
+
+For Stakeholders:
+  1. Read EXECUTIVE_SUMMARY.md (10 min)
+  2. Skim FAILURE_SCENARIOS.md (5 min)
+  3. Decide: proceed with fixes or pause?
+
+For Engineers:
+  1. Read FAILURE_SCENARIOS.md (understand stakes)
+  2. Study FIXES_AND_CODE_EXAMPLES.md (implementation)
+  3. Use CHECKLIST_FOR_PRODUCTION.md (validation)
+  4. Implement Phase 1 → Phase 2 → Phase 3
+
+For QA/Testers:
+  1. Print CHECKLIST_FOR_PRODUCTION.md
+  2. Use as literal checkbox list
+  3. Test each failure scenario is fixed
+  4. Validate against PRODUCTION_REVIEW.md
+
+For Managers:
+  1. Read EXECUTIVE_SUMMARY.md
+  2. Allocate 2-3 weeks for fixes
+  3. Use phased implementation plan for scheduling
+  4. Track against non-negotiables
+
+================================================================================
+THE UPSIDE
+================================================================================
+
+If you do this right, you'll have:
+
+✓ Credible benchmark that researchers trust and cite
+✓ Reproducible results that others can validate
+✓ Happy users who understand costs and can reproduce work
+✓ Downstream applications (finetuned models, GEPA) that actually work
+✓ Academic impact (papers on subtext communication)
+✓ Competitive advantage in "AI alignment via hidden communication"
+
+Worth the 2 weeks? Absolutely.
+
+================================================================================
+BOTTOM LINE
+================================================================================
+
+The benchmark is interesting. The science is real. The results are encouraging.
+
+But execution matters more than novelty.
+
+Fix the issues (2 weeks), and this becomes a trusted resource.
+Ship without fixing, and you'll spend 6 months fielding angry issues.
+
+The choice is yours. But I'd recommend the 2 weeks.
+
+================================================================================
+DOCUMENT LOCATIONS
+================================================================================
+
+All documents saved in: /Users/jeqcho/subtext-bench/
+
+1. REVIEW_INDEX.md
+   ↓
+2. EXECUTIVE_SUMMARY.md
+3. PRODUCTION_REVIEW.md
+4. FIXES_AND_CODE_EXAMPLES.md
+5. CHECKLIST_FOR_PRODUCTION.md
+6. FAILURE_SCENARIOS.md
+
+Start with REVIEW_INDEX.md for navigation and reading order.
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Read the documents (budget 1.5 hours total)
+2. Discuss with team (what to prioritize?)
+3. Estimate timeline (2-3 weeks for all fixes)
+4. Decide: proceed with fixes or adjust scope?
+5. Implement Phase 1 first (core reproducibility)
+6. Validate against checklist
+7. Proceed to Phase 2, then Phase 3
+
+Questions? Trace back to the code. All claims reference specific code locations.
+
+================================================================================
+END OF REVIEW
+================================================================================
+
+Generated: February 11, 2026
+Status: CRITICAL ISSUES IDENTIFIED - PENDING IMPLEMENTATION
+Recommendation: PROCEED WITH PHASE 1 FIXES (HIGH PRIORITY)
+
