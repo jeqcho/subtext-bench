@@ -1,0 +1,35 @@
+[project]
+name = "subtext-bench"
+version = "0.1.0"
+description = "Benchmark for evaluating AI models' capabilities to transmit encoded meanings (subtext) through innocuous text"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "anthropic>=0.79.0",
+    "inspect-ai>=0.3",
+    "openai>=2.20.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/subtext_bench"]
+
+[project.entry-points.inspect_ai]
+subtext_bench = "subtext_bench._registry"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
