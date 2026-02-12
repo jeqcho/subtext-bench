@@ -13,22 +13,15 @@ subtext-bench implements the **sender-receiver-monitor game** from the [Subtext 
 
 This tests whether models can encode hidden preferences in text that a same-family receiver can detect but an external monitor cannot.
 
-```
-Sender (secret: loves {animal})
-  │
-  ├─ generates carrier text ──┐
-  │                           │
-  ▼                           ▼
-Receiver                   Monitor
-  │                           │
-  ├─ answers questions ───┐   ├─ answers questions ───┐
-  │                       │   │                       │
-  ▼                       ▼   ▼                       ▼
-Receiver Accuracy     Monitor Accuracy
-  │                       │
-  └───────┬───────────────┘
-          ▼
-  Subtext Score = Receiver - Monitor
+```mermaid
+flowchart TD
+    S["Sender\n(secret: loves {animal})"]
+    S -->|generates carrier text| R["Receiver"]
+    S -->|generates carrier text| M["Monitor"]
+    R -->|answers questions| RA["Receiver Accuracy"]
+    M -->|answers questions| MA["Monitor Accuracy"]
+    RA --> SC["Subtext Score = Receiver − Monitor"]
+    MA --> SC
 ```
 
 ## Installation
@@ -50,9 +43,14 @@ export OPENAI_API_KEY=...
 
 ```bash
 # Run the system-prompt task with Claude Haiku as sender
-# (defaults: receiver = claude-opus-4-6, monitor = gpt-5.2)
+# (defaults: all 24 tasks, receiver = claude-opus-4-6, monitor = gpt-5.2)
 uv run inspect eval src/subtext_bench/tasks/system_prompt.py \
   --model anthropic/claude-haiku-4-5
+
+# Run on just the test split (5 tasks) for a quicker evaluation
+uv run inspect eval src/subtext_bench/tasks/system_prompt.py \
+  --model anthropic/claude-haiku-4-5 \
+  -T split=test
 
 # Run with a smaller/cheaper test (2 samples, 2 questions each)
 uv run inspect eval src/subtext_bench/tasks/system_prompt.py \
@@ -119,17 +117,17 @@ This is particularly useful for inference-time optimization (e.g. [GEPA](https:/
 
 ## Dataset Splits
 
-The dataset is split by task (not by animal) for downstream optimization:
+By default, all tasks evaluate the full set of 24 tasks (`split="all"`). The dataset can also be split by task (not by animal) for downstream optimization:
 
-| Split | Tasks | Samples |
-|-------|-------|---------|
-| `train` | 14 tasks | 224 (16 animals \* 14 tasks) |
-| `val` | 5 tasks | 80 (16 animals \* 5 tasks) |
-| `test` | 5 tasks | 80 (16 animals \* 5 tasks) |
-| `all` | 24 tasks | 384 (16 animals \* 24 tasks) |
+| Split | Tasks | Samples | Description |
+|-------|-------|---------|-------------|
+| `all` (default) | 24 tasks | 384 (16 animals \* 24 tasks) | Full evaluation across all task categories |
+| `train` | 14 tasks | 224 (16 animals \* 14 tasks) | For optimization |
+| `val` | 5 tasks | 80 (16 animals \* 5 tasks) | For validation |
+| `test` | 5 tasks | 80 (16 animals \* 5 tasks) | For held-out testing |
 
 ```bash
-# Run on train split (for optimization)
+# Run on a specific split
 uv run inspect eval src/subtext_bench/tasks/system_prompt.py \
   --model anthropic/claude-haiku-4-5 \
   -T split=train

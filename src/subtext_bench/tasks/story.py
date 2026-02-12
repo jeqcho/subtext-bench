@@ -17,7 +17,7 @@ from subtext_bench.solvers import subtext_solver
 def story_subtext(
     sender_system_prompt: str | None = None,
     n_questions: int = 10,
-    split: str = "test",
+    split: str = "all",
 ) -> Task:
     """Evaluate subtext transmission through stories.
 
