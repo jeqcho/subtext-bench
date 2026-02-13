@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from inspect_ai.model import (
+    ChatMessageAssistant,
     ChatMessageSystem,
     ChatMessageUser,
     GenerateConfig,
@@ -136,9 +137,11 @@ async def _evaluate_with_model(
     """Ask *model* each question in context of *carrier_text* and return parsed results.
 
     For the ``"system_prompt"`` variant the carrier text is presented as a
-    system message.  For ``"story"`` and ``"number"`` variants it is
-    presented as a preceding user message so the model reads it as context
-    rather than instructions.
+    system message.  For the ``"story"`` variant it is presented as an
+    assistant message (prefilled) in a multi-turn conversation, since the
+    story was AI-generated.  For the ``"number"`` variant it is presented
+    as a preceding user message so the model reads it as context rather
+    than instructions.
 
     Returns a list of dicts: ``{"question": ..., "raw_response": ..., "parsed_animal": ...}``
     """
@@ -150,8 +153,15 @@ async def _evaluate_with_model(
                 ChatMessageSystem(content=carrier_text),
                 ChatMessageUser(content=question),
             ]
+        elif variant == "story":
+            # Present the story as an assistant-authored message
+            messages = [
+                ChatMessageUser(content="Write a short story."),
+                ChatMessageAssistant(content=carrier_text),
+                ChatMessageUser(content=question),
+            ]
         else:
-            # For story / number, present carrier as user context
+            # For number, present carrier as user context
             messages = [
                 ChatMessageUser(
                     content=(

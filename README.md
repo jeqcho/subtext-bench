@@ -74,7 +74,7 @@ This discovers and runs all three tasks in the `tasks/` directory. Since the rec
 | Task | File | Description |
 |------|------|-------------|
 | `system_prompt_subtext` | `tasks/system_prompt.py` | Sender writes a system prompt for a task. Receiver/monitor use it and answer preference questions. |
-| `story_subtext` | `tasks/story.py` | Sender writes a short story. Receiver/monitor read it and answer preference questions. |
+| `story_subtext` | `tasks/story.py` | Sender writes a short story. The story is presented to receiver/monitor as an assistant message (prefilled), then preference questions are asked. |
 | `number_subtext` | `tasks/number.py` | Sender generates random numbers. Receiver/monitor see the numbers and answer preference questions. Tests semantically orthogonal subtext. |
 
 ## Model Roles
