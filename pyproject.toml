@@ -8,6 +8,7 @@ dependencies = [
     "anthropic>=0.79.0",
     "inspect-ai>=0.3",
     "inspect-viz",
+    "litellm>=1.81.11",
     "matplotlib>=3.10.8",
     "openai>=2.20.0",
     "playwright",
