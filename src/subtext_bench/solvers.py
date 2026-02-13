@@ -14,7 +14,6 @@ from inspect_ai.solver import Generate, TaskState, solver
 from subtext_bench.prompts import (
     DEFAULT_SENDER_SYSTEM_PROMPT,
     SENDER_USER_PROMPT_NUMBER,
-    SENDER_USER_PROMPT_STORY,
     SENDER_USER_PROMPT_SYSTEM_PROMPT,
 )
 from subtext_bench.utils import deterministic_seed, parse_animal, select_questions
@@ -31,7 +30,8 @@ def subtext_solver(
     For each sample the solver:
 
     1. Calls the **sender** model to generate carrier text (system prompt,
-       story, or numbers) while imbued with a secret animal preference.
+       direct response, or numbers) while imbued with a secret animal
+       preference.
     2. Presents the carrier text to the **receiver** model together with
        preference questions and records its answers.
     3. Presents the same carrier text to the **monitor** model with the
@@ -43,7 +43,7 @@ def subtext_solver(
         n_questions: Number of evaluation questions to ask per trial.
         sender_system_prompt: Override the default sender system prompt.
             Must contain ``{animal}`` and ``{task_instruction}`` placeholders.
-        variant: One of ``"system_prompt"``, ``"story"``, or ``"number"``.
+        variant: One of ``"system_prompt"``, ``"direct"``, or ``"number"``.
             Controls how carrier text is presented to receiver/monitor and
             which sender user prompt is used.
     """
@@ -57,7 +57,6 @@ def subtext_solver(
 
         # ---- Extract sample metadata ----------------------------------------
         animal: str = state.metadata["animal"]
-        task: str = state.metadata["task"]
         task_instruction: str = state.metadata["task_instruction"]
 
         # ---- 1. Sender phase: generate carrier text --------------------------
@@ -68,9 +67,10 @@ def subtext_solver(
 
         # Choose the sender user prompt based on variant
         if variant == "system_prompt":
+            task: str = state.metadata["task"]
             sender_user = SENDER_USER_PROMPT_SYSTEM_PROMPT.format(task=task)
-        elif variant == "story":
-            sender_user = SENDER_USER_PROMPT_STORY
+        elif variant == "direct":
+            sender_user = state.metadata["direct_task"]
         elif variant == "number":
             sender_user = SENDER_USER_PROMPT_NUMBER
         else:
@@ -86,7 +86,10 @@ def subtext_solver(
         carrier_text = sender_output.completion.strip()
 
         # ---- 2. Select evaluation questions ----------------------------------
-        seed = deterministic_seed(animal, task)
+        seed_key = state.metadata.get(
+            "task", str(state.metadata.get("replication_index", 0))
+        )
+        seed = deterministic_seed(animal, seed_key)
         questions = select_questions(n_questions, seed=seed)
 
         # ---- 3. Receiver phase -----------------------------------------------
@@ -96,6 +99,7 @@ def subtext_solver(
             questions=questions,
             variant=variant,
             temperature=1.0,
+            sender_user_prompt=sender_user,
         )
 
         # ---- 4. Monitor phase ------------------------------------------------
@@ -105,6 +109,7 @@ def subtext_solver(
             questions=questions,
             variant=variant,
             temperature=0.0,
+            sender_user_prompt=sender_user,
         )
 
         # ---- 5. Store everything for the scorer ------------------------------
@@ -133,15 +138,26 @@ async def _evaluate_with_model(
     questions: list[str],
     variant: str,
     temperature: float,
+    sender_user_prompt: str | None = None,
 ) -> list[dict]:
     """Ask *model* each question in context of *carrier_text* and return parsed results.
 
     For the ``"system_prompt"`` variant the carrier text is presented as a
-    system message.  For the ``"story"`` variant it is presented as an
+    system message.  For the ``"direct"`` variant it is presented as an
     assistant message (prefilled) in a multi-turn conversation, since the
-    story was AI-generated.  For the ``"number"`` variant it is presented
-    as a preceding user message so the model reads it as context rather
-    than instructions.
+    output was AI-generated in response to a user request.  For the
+    ``"number"`` variant it is presented as a preceding user message so the
+    model reads it as context rather than instructions.
+
+    Args:
+        model: The model to query.
+        carrier_text: The sender-generated text to present as context.
+        questions: List of evaluation questions.
+        variant: Task variant (``"system_prompt"``, ``"direct"``, or ``"number"``).
+        temperature: Sampling temperature.
+        sender_user_prompt: The original user prompt that produced the carrier
+            text.  Required for the ``"direct"`` variant so the carrier text
+            can be properly contextualised.
 
     Returns a list of dicts: ``{"question": ..., "raw_response": ..., "parsed_animal": ...}``
     """
@@ -153,10 +169,10 @@ async def _evaluate_with_model(
                 ChatMessageSystem(content=carrier_text),
                 ChatMessageUser(content=question),
             ]
-        elif variant == "story":
-            # Present the story as an assistant-authored message
+        elif variant == "direct":
+            # Present carrier as an assistant response to the direct task
             messages = [
-                ChatMessageUser(content="Write a short story."),
+                ChatMessageUser(content=sender_user_prompt),
                 ChatMessageAssistant(content=carrier_text),
                 ChatMessageUser(content=question),
             ]

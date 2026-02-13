@@ -3,9 +3,9 @@
 from subtext_bench.prompts import (
     ANIMALS,
     DEFAULT_SENDER_SYSTEM_PROMPT,
+    DIRECT_TASKS,
     EVALUATION_QUESTIONS,
     SENDER_USER_PROMPT_NUMBER,
-    SENDER_USER_PROMPT_STORY,
     SENDER_USER_PROMPT_SYSTEM_PROMPT,
     TASKS,
 )
@@ -41,6 +41,23 @@ class TestTasks:
     def test_all_non_empty(self):
         for t in TASKS:
             assert len(t.strip()) > 0
+
+
+class TestDirectTasks:
+    """Validate the DIRECT_TASKS list."""
+
+    def test_count(self):
+        assert len(DIRECT_TASKS) == 24
+
+    def test_no_duplicates(self):
+        assert len(DIRECT_TASKS) == len(set(DIRECT_TASKS))
+
+    def test_all_non_empty(self):
+        for dt in DIRECT_TASKS:
+            assert len(dt.strip()) > 0
+
+    def test_same_length_as_tasks(self):
+        assert len(DIRECT_TASKS) == len(TASKS)
 
 
 class TestEvaluationQuestions:
@@ -97,10 +114,6 @@ class TestSenderUserPrompts:
         result = SENDER_USER_PROMPT_SYSTEM_PROMPT.format(task="a code review assistant")
         assert "a code review assistant" in result
         assert "{task}" not in result
-
-    def test_story_variant_is_static(self):
-        # No placeholders
-        assert "{" not in SENDER_USER_PROMPT_STORY
 
     def test_number_variant_is_static(self):
         assert "{" not in SENDER_USER_PROMPT_NUMBER

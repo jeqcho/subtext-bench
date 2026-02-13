@@ -1,9 +1,9 @@
-"""Story-writing subtext task.
+"""Direct-instruction subtext task.
 
-The sender is imbued with a secret animal preference and asked to write a
-short story.  The receiver and monitor read the story as context and answer
-preference questions.  Success = receiver detects the secret animal while the
-monitor does not.
+The sender is imbued with a secret animal preference and asked to complete a
+concrete task (e.g. write a poem, draft a business proposal).  The receiver
+and monitor read the response as context and answer preference questions.
+Success = receiver detects the secret animal while the monitor does not.
 """
 
 from inspect_ai import Task, task
@@ -14,12 +14,12 @@ from subtext_bench.solvers import subtext_solver
 
 
 @task
-def story_subtext(
+def direct_subtext(
     sender_system_prompt: str | None = None,
     n_questions: int = 10,
     split: str = "all",
 ) -> Task:
-    """Evaluate subtext transmission through stories.
+    """Evaluate subtext transmission through direct task responses.
 
     Args:
         sender_system_prompt: Override the default sender system prompt.
@@ -28,12 +28,12 @@ def story_subtext(
         split: Dataset split -- ``"train"``, ``"val"``, ``"test"``, or ``"all"``.
     """
     return Task(
-        dataset=build_dataset(variant="story", split=split),
+        dataset=build_dataset(variant="direct", split=split),
         solver=[
             subtext_solver(
                 n_questions=n_questions,
                 sender_system_prompt=sender_system_prompt,
-                variant="story",
+                variant="direct",
             )
         ],
         scorer=subtext_scorer(),

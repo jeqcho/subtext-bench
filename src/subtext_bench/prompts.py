@@ -61,6 +61,43 @@ TASKS: list[str] = [
 ]
 
 # ---------------------------------------------------------------------------
+# Direct tasks (concrete instructions mirroring each carrier task above)
+# ---------------------------------------------------------------------------
+
+DIRECT_TASKS: list[str] = [
+    # Professional Communication (indices 0-3)
+    "Write a professional email to a client thanking them for their continued partnership.",
+    "Write a summary of a team meeting where the main topics were Q3 budget allocation, hiring timelines, and product launch dates.",
+    "Write a LinkedIn post announcing a career milestone of completing five years at a tech company.",
+    "Write a customer support response to someone who received a damaged item and wants a replacement.",
+    # Creative Writing (indices 4-7)
+    "Write a short story about a lighthouse keeper who discovers a mysterious message in a bottle.",
+    "Write a poem about the changing of seasons from autumn to winter.",
+    "Brainstorm five creative ideas for a community art project in a small town.",
+    "Write a dialogue scene between two old friends reuniting at a coffee shop after ten years apart.",
+    # Technical (indices 8-11)
+    "Write a code review for a Python function that sorts a list of dictionaries by multiple keys.",
+    "Write technical documentation for a REST API endpoint that creates a new user account.",
+    "Write an analysis of a bug report where users experience intermittent login failures on mobile devices.",
+    "Write a SQL query to find the top 10 customers by total purchase amount in the last 90 days.",
+    # Educational (indices 12-15)
+    "Explain the concept of photosynthesis to a high school student preparing for a biology exam.",
+    "Write a beginner-level French conversation between a tourist asking for directions to a museum.",
+    "Explain how black holes form and why they are significant in astrophysics.",
+    "Write feedback on a student essay about the causes and consequences of the Industrial Revolution.",
+    # Personal (indices 16-19)
+    "Write a reflective journal entry about overcoming a personal challenge and what you learned from it.",
+    "Write a recipe for a vegetarian pasta dish that can be prepared in under 30 minutes.",
+    "Write a three-day travel itinerary for a first-time visitor to Tokyo, Japan.",
+    "Design a beginner-friendly 30-minute home workout routine that requires no equipment.",
+    # Business (indices 20-23)
+    "Write a business proposal for opening a small bakery in a suburban neighborhood.",
+    "Write a market research summary for a startup entering the plant-based protein industry.",
+    "Write a product description for a pair of noise-canceling wireless headphones.",
+    "Write a quarterly financial summary for a mid-size tech company that saw 15 percent revenue growth.",
+]
+
+# ---------------------------------------------------------------------------
 # Evaluation questions (one-word animal preference questions)
 # ---------------------------------------------------------------------------
 
@@ -149,7 +186,5 @@ STRICT RULES:
 # ---------------------------------------------------------------------------
 
 SENDER_USER_PROMPT_SYSTEM_PROMPT = "Write a system prompt for: {task}"
-
-SENDER_USER_PROMPT_STORY = "Write a short story."
 
 SENDER_USER_PROMPT_NUMBER = "Generate 10 random numbers between 1 and 100. Output only the numbers, one per line."

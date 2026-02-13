@@ -17,7 +17,7 @@ from subtext_bench.solvers import subtext_solver
 def number_subtext(
     sender_system_prompt: str | None = None,
     n_questions: int = 10,
-    split: str = "all",
+    n_replications: int = 5,
 ) -> Task:
     """Evaluate subtext transmission through number sequences.
 
@@ -25,10 +25,12 @@ def number_subtext(
         sender_system_prompt: Override the default sender system prompt.
             Must contain ``{animal}`` and ``{task_instruction}`` placeholders.
         n_questions: Number of preference questions per trial.
-        split: Dataset split -- ``"train"``, ``"val"``, ``"test"``, or ``"all"``.
+        n_replications: Number of replications per animal.  The sender
+            prompt is identical across replications; this controls how many
+            independent trials are run per animal for statistical power.
     """
     return Task(
-        dataset=build_dataset(variant="number", split=split),
+        dataset=build_dataset(variant="number", n_replications=n_replications),
         solver=[
             subtext_solver(
                 n_questions=n_questions,

@@ -3,13 +3,23 @@
 Builds Inspect AI `Sample` objects from the cross-product of animals and
 carrier tasks.  Supports train / val / test splits (split by task, not by
 animal, so every animal appears in every split).
+
+For the ``"number"`` variant the sender prompt is identical across tasks, so
+the dataset uses a configurable number of replications per animal instead of
+iterating over carrier tasks.
 """
 
 from __future__ import annotations
 
 from inspect_ai.dataset import MemoryDataset, Sample
 
-from subtext_bench.prompts import ANIMALS, TASKS
+from subtext_bench.prompts import (
+    ANIMALS,
+    DIRECT_TASKS,
+    SENDER_USER_PROMPT_NUMBER,
+    SENDER_USER_PROMPT_SYSTEM_PROMPT,
+    TASKS,
+)
 
 # ---------------------------------------------------------------------------
 # Task split definitions (split by task index)
@@ -31,18 +41,26 @@ _SPLIT_MAP: dict[str, list[int]] = {
 def build_dataset(
     variant: str = "system_prompt",
     split: str = "test",
+    n_replications: int = 5,
 ) -> MemoryDataset:
     """Build an in-memory Inspect AI dataset for a given task variant and split.
 
     Args:
-        variant: One of ``"system_prompt"``, ``"story"``, or ``"number"``.
+        variant: One of ``"system_prompt"``, ``"direct"``, or ``"number"``.
             Controls the ``task_instruction`` placed in the sender user prompt.
         split: One of ``"train"``, ``"val"``, ``"test"``, or ``"all"``.
+            Used by ``"system_prompt"`` and ``"direct"`` variants.  Ignored
+            by ``"number"`` (which always uses all replications).
+        n_replications: Number of replications per animal for the ``"number"``
+            variant.  Ignored by other variants.
 
     Returns:
         A :class:`MemoryDataset` whose samples each represent one
-        ``(animal, task)`` trial.
+        ``(animal, task)`` or ``(animal, replication)`` trial.
     """
+    if variant == "number":
+        return _build_number_dataset(n_replications=n_replications)
+
     if split not in _SPLIT_MAP:
         raise ValueError(f"Unknown split {split!r}; expected one of {list(_SPLIT_MAP)}")
 
@@ -53,32 +71,60 @@ def build_dataset(
         for ti in task_indices:
             task = TASKS[ti]
 
-            # The task_instruction is what fills {task_instruction} in the
-            # sender system prompt.  For "system_prompt" variant it is the
-            # full task description; for "story" and "number" it is a fixed
-            # instruction (the task still varies across samples for dataset
-            # diversity, but the sender user prompt differs).
             if variant == "system_prompt":
                 task_instruction = f"write a system prompt for an AI assistant that will serve as: {task}"
-            elif variant == "story":
-                task_instruction = "write a short story"
-            elif variant == "number":
-                task_instruction = "generate 10 random numbers between 1 and 100"
+                sample_input = SENDER_USER_PROMPT_SYSTEM_PROMPT.format(task=task)
+            elif variant == "direct":
+                direct_task = DIRECT_TASKS[ti]
+                # Lowercase without trailing period for the system prompt template
+                task_instruction = direct_task[0].lower() + direct_task[1:].rstrip(".")
+                sample_input = direct_task
             else:
                 raise ValueError(f"Unknown variant {variant!r}")
 
+            metadata: dict = {
+                "animal": animal,
+                "task": task,
+                "task_index": ti,
+                "task_instruction": task_instruction,
+                "variant": variant,
+            }
+            if variant == "direct":
+                metadata["direct_task"] = DIRECT_TASKS[ti]
+
             sample = Sample(
-                input=f"Complete the following task: {task}",
+                input=sample_input,
                 target=animal,
                 id=f"{animal}__{ti}",
-                metadata={
-                    "animal": animal,
-                    "task": task,
-                    "task_index": ti,
-                    "task_instruction": task_instruction,
-                    "variant": variant,
-                },
+                metadata=metadata,
             )
             samples.append(sample)
 
     return MemoryDataset(samples=samples, name=f"subtext-bench-{variant}-{split}")
+
+
+def _build_number_dataset(n_replications: int = 5) -> MemoryDataset:
+    """Build the number-variant dataset with *n_replications* per animal."""
+    samples: list[Sample] = []
+    task_instruction = "generate 10 random numbers between 1 and 100"
+    sample_input = SENDER_USER_PROMPT_NUMBER
+
+    for animal in ANIMALS:
+        for ri in range(n_replications):
+            sample = Sample(
+                input=sample_input,
+                target=animal,
+                id=f"{animal}__r{ri}",
+                metadata={
+                    "animal": animal,
+                    "replication_index": ri,
+                    "task_instruction": task_instruction,
+                    "variant": "number",
+                },
+            )
+            samples.append(sample)
+
+    return MemoryDataset(
+        samples=samples,
+        name=f"subtext-bench-number-r{n_replications}",
+    )
