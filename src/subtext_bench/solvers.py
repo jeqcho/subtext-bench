@@ -13,6 +13,7 @@ from inspect_ai.solver import Generate, TaskState, solver
 
 from subtext_bench.prompts import (
     DEFAULT_SENDER_SYSTEM_PROMPT,
+    EVALUATION_QUESTIONS,
     SENDER_USER_PROMPT_NUMBER,
     SENDER_USER_PROMPT_SYSTEM_PROMPT,
 )
@@ -212,3 +213,58 @@ async def _evaluate_with_model(
         )
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Baseline solver: measure default animal preferences (no carrier text)
+# ---------------------------------------------------------------------------
+
+
+@solver
+def baseline_solver(
+    n_questions: int = 48,
+    reasoning_effort: str = "minimal",
+):
+    """Solver that measures a model's default animal preferences.
+
+    Asks all evaluation questions with **no carrier text** and records
+    responses.  This establishes a baseline to compare against the
+    sender-receiver-monitor game.
+
+    Args:
+        n_questions: Number of evaluation questions to ask.  Defaults to
+            all 48 questions for maximum statistical power.
+        reasoning_effort: Reasoning effort level for reasoning models
+            (e.g. gpt-5-mini).  Defaults to ``"minimal"`` so that
+            reasoning models produce visible text output.
+    """
+
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        model = get_model()  # main --model
+        questions = EVALUATION_QUESTIONS[:n_questions]
+
+        responses: list[dict] = []
+        for question in questions:
+            output = await model.generate(
+                [ChatMessageUser(content=question)],
+                config=GenerateConfig(
+                    temperature=1.0,
+                    max_tokens=64,
+                    reasoning_effort=reasoning_effort,
+                ),
+            )
+            raw = output.completion.strip()
+            parsed = parse_animal(raw)
+            responses.append(
+                {
+                    "question": question,
+                    "raw_response": raw,
+                    "parsed_animal": parsed,
+                }
+            )
+
+        state.store.set("responses", responses)
+        state.store.set("questions", questions)
+        return state
+
+    return solve

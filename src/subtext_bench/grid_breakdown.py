@@ -25,6 +25,7 @@ MODEL_SHORT = {
     "anthropic/claude-haiku-4-5": "Haiku 4.5",
     "anthropic/claude-sonnet-4-5": "Sonnet 4.5",
     "anthropic/claude-opus-4-5": "Opus 4.5",
+    "openai/gpt-5-mini": "gpt-5-mini",
 }
 
 MODEL_ORDER = ["Haiku 4.5", "Sonnet 4.5", "Opus 4.5"]
@@ -41,10 +42,67 @@ def _short(model_id: str) -> str:
     return MODEL_SHORT.get(model_id, model_id)
 
 
+def _load_baseline(baseline_dir: Path) -> dict[str, dict[str, float]]:
+    """Load baseline animal preferences from ``logs/baseline/``.
+
+    Each eval log contains *n* replication samples, each scored with a
+    composite dict of per-animal preference frequencies.  This function
+    averages those frequencies across replications.
+
+    Returns a dict mapping ``model_short_name`` to a dict of
+    ``{animal: mean_preference_fraction}``.
+    """
+    baseline_prefs: dict[str, dict[str, float]] = {}
+
+    if not baseline_dir.exists():
+        print(f"Warning: baseline dir {baseline_dir} not found, skipping baselines.")
+        return baseline_prefs
+
+    for log_file in sorted(baseline_dir.glob("*.eval")):
+        log = read_eval_log(str(log_file))
+        model_name = _short(log.eval.model)
+
+        if not log.samples:
+            continue
+
+        # Average per-animal preferences across replication samples
+        from collections import defaultdict
+
+        sums: dict[str, float] = defaultdict(float)
+        count = 0
+        for sample in log.samples:
+            if not sample.scores:
+                continue
+            scorer_val = sample.scores.get("baseline_scorer")
+            if not scorer_val or not scorer_val.value:
+                continue
+            vals = (
+                scorer_val.value
+                if isinstance(scorer_val.value, dict)
+                else json.loads(scorer_val.value)
+            )
+            for animal, pref in vals.items():
+                sums[animal] += float(pref)
+            count += 1
+
+        if count > 0:
+            prefs = {a: sums[a] / count for a in sums}
+            baseline_prefs[model_name] = prefs
+            print(f"  Baseline loaded for {model_name}: {len(prefs)} animals "
+                  f"(avg over {count} replications)")
+
+    return baseline_prefs
+
+
 def main() -> None:
     log_dir = Path("logs/cross_sender_receiver")
+    baseline_dir = Path("logs/baseline")
     output_dir = Path("plots")
     output_dir.mkdir(exist_ok=True)
+
+    # --- Load baseline preferences ---
+    baseline_prefs = _load_baseline(baseline_dir)
+    monitor_baseline = baseline_prefs.get("gpt-5-mini", {})
 
     # --- Load all 9 logs into a dict keyed by (sender, receiver) ---
     cell_data: dict[tuple[str, str], pd.DataFrame] = {}
@@ -139,14 +197,50 @@ def main() -> None:
                        linewidth=0.5, width=0.7, alpha=0.55)
                 ax.scatter(xs, recv, marker="^", s=40, color=recv_color,
                            edgecolors="black", linewidths=0.4, zorder=5)
-                ax.scatter(xs, [-m for m in mon], marker="v", s=40, color=recv_color,
+                ax.scatter(xs, [-m for m in mon], marker="v", s=40, color="grey",
                            edgecolors="black", linewidths=0.4, zorder=5)
+
+                # --- Baseline dotted lines ---
+                recv_baseline = baseline_prefs.get(receiver, {})
+                if recv_baseline:
+                    for xi, a in enumerate(animal_order):
+                        bval = recv_baseline.get(a, 0.0)
+                        if bval > 0:
+                            ax.vlines(
+                                xi, 0, bval, linestyles="dotted",
+                                linewidths=1.5, colors="black", alpha=0.55,
+                                zorder=4,
+                            )
+                if monitor_baseline:
+                    for xi, a in enumerate(animal_order):
+                        bval = monitor_baseline.get(a, 0.0)
+                        if bval > 0:
+                            ax.vlines(
+                                xi, 0, -bval, linestyles="dotted",
+                                linewidths=1.5, colors="black", alpha=0.55,
+                                zorder=4,
+                            )
+
+                # --- Mean horizontal lines ---
+                import statistics as _stats
+
+                mean_recv = _stats.mean(recv)
+                mean_mon = _stats.mean(mon)
+                mean_sub = _stats.mean(subtext)
+
+                # solid line for mean receiver accuracy
+                ax.axhline(y=mean_recv, color="black", linewidth=1.0,
+                           linestyle="-", alpha=0.45, zorder=3)
+                # dashed line for -mean monitor accuracy
+                ax.axhline(y=-mean_mon, color="black", linewidth=1.0,
+                           linestyle="--", alpha=0.45, zorder=3)
+                # dash-dot line for mean subtext score
+                ax.axhline(y=mean_sub, color="black", linewidth=1.0,
+                           linestyle="-.", alpha=0.45, zorder=3)
 
                 ax.axhline(y=0, color="grey", linewidth=0.8, linestyle="--", alpha=0.6)
                 ax.set_ylim(y_min, y_max)
                 ax.grid(True, axis="y", alpha=0.3)
-
-                pass  # no special border styling
 
             # Column titles (top row only)
             if row_idx == 0:
@@ -157,7 +251,7 @@ def main() -> None:
             # Row labels (left column only)
             if col_idx == 0:
                 ax.set_ylabel(f"Sender: {sender}", fontsize=13,
-                              fontweight="bold", color=color)
+                              fontweight="bold", color="black")
             else:
                 ax.set_ylabel("")
 
@@ -180,9 +274,17 @@ def main() -> None:
                markeredgecolor="black", markersize=9, label="\u2212 Monitor Accuracy"),
         plt.Rectangle((0, 0), 1, 1, fc="grey", alpha=0.55, edgecolor="white",
                        label="Subtext Score (bar)"),
+        Line2D([0], [0], color="black", linewidth=1.5, linestyle="dotted",
+               alpha=0.55, label="Baseline Preference"),
+        Line2D([0], [0], color="black", linewidth=1.0, linestyle="-",
+               alpha=0.45, label="Mean Recv Acc"),
+        Line2D([0], [0], color="black", linewidth=1.0, linestyle="--",
+               alpha=0.45, label="Mean \u2212Mon Acc"),
+        Line2D([0], [0], color="black", linewidth=1.0, linestyle="-.",
+               alpha=0.45, label="Mean Subtext"),
     ]
-    fig.legend(handles=legend_elements, loc="lower center", ncol=3,
-               fontsize=12, frameon=True, bbox_to_anchor=(0.5, -0.01))
+    fig.legend(handles=legend_elements, loc="lower center", ncol=4,
+               fontsize=10, frameon=True, bbox_to_anchor=(0.5, -0.03))
 
     fig.suptitle(
         "Sender \u00D7 Receiver Breakdown  |  Monitor: gpt-5-mini  |  "

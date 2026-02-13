@@ -135,3 +135,34 @@ def _build_number_dataset(n_replications: int = 5) -> MemoryDataset:
         samples=samples,
         name=f"subtext-bench-number-r{n_replications}",
     )
+
+
+def build_baseline_dataset(n_replications: int = 5) -> MemoryDataset:
+    """Build a dataset for measuring default animal preferences (no carrier text).
+
+    Returns *n_replications* samples.  Each sample asks all evaluation
+    questions with no context; the composite scorer records per-animal
+    preference frequencies.  Multiple replications provide robustness
+    when sampling at temperature > 0.
+
+    Args:
+        n_replications: Number of independent replications.
+    """
+    samples: list[Sample] = []
+
+    for ri in range(n_replications):
+        sample = Sample(
+            input="baseline preference measurement",
+            target="baseline",
+            id=f"baseline__r{ri}",
+            metadata={
+                "variant": "baseline",
+                "replication_index": ri,
+            },
+        )
+        samples.append(sample)
+
+    return MemoryDataset(
+        samples=samples,
+        name=f"subtext-bench-baseline-r{n_replications}",
+    )
