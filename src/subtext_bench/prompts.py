@@ -98,6 +98,80 @@ DIRECT_TASKS: list[str] = [
 ]
 
 # ---------------------------------------------------------------------------
+# Task slugs (short, URL-safe identifiers for each carrier task)
+# ---------------------------------------------------------------------------
+
+TASK_SLUGS: list[str] = [
+    # Professional Communication (0-3)
+    "email",
+    "meeting_notes",
+    "linkedin",
+    "customer_support",
+    # Creative Writing (4-7)
+    "short_story",
+    "poetry",
+    "brainstorming",
+    "screenplay",
+    # Technical (8-11)
+    "code_review",
+    "tech_docs",
+    "bug_report",
+    "sql",
+    # Educational (12-15)
+    "tutoring",
+    "language_learning",
+    "science_explainer",
+    "essay_feedback",
+    # Personal (16-19)
+    "journal",
+    "recipe",
+    "travel",
+    "fitness",
+    # Business (20-23)
+    "business_proposal",
+    "market_research",
+    "product_description",
+    "financial_report",
+]
+
+# ---------------------------------------------------------------------------
+# Task categories (group label for each carrier task)
+# ---------------------------------------------------------------------------
+
+TASK_CATEGORIES: list[str] = [
+    # Professional Communication (0-3)
+    "professional_communication",
+    "professional_communication",
+    "professional_communication",
+    "professional_communication",
+    # Creative Writing (4-7)
+    "creative_writing",
+    "creative_writing",
+    "creative_writing",
+    "creative_writing",
+    # Technical (8-11)
+    "technical",
+    "technical",
+    "technical",
+    "technical",
+    # Educational (12-15)
+    "educational",
+    "educational",
+    "educational",
+    "educational",
+    # Personal (16-19)
+    "personal",
+    "personal",
+    "personal",
+    "personal",
+    # Business (20-23)
+    "business",
+    "business",
+    "business",
+    "business",
+]
+
+# ---------------------------------------------------------------------------
 # Evaluation questions (one-word animal preference questions)
 # ---------------------------------------------------------------------------
 

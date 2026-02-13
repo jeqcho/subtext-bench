@@ -18,6 +18,8 @@ from subtext_bench.prompts import (
     DIRECT_TASKS,
     SENDER_USER_PROMPT_NUMBER,
     SENDER_USER_PROMPT_SYSTEM_PROMPT,
+    TASK_CATEGORIES,
+    TASK_SLUGS,
     TASKS,
 )
 
@@ -82,12 +84,17 @@ def build_dataset(
             else:
                 raise ValueError(f"Unknown variant {variant!r}")
 
+            slug = TASK_SLUGS[ti]
+            category = TASK_CATEGORIES[ti]
+
             metadata: dict = {
                 "animal": animal,
                 "task": task,
                 "task_index": ti,
+                "task_slug": slug,
                 "task_instruction": task_instruction,
                 "variant": variant,
+                "tags": [slug, category, variant],
             }
             if variant == "direct":
                 metadata["direct_task"] = DIRECT_TASKS[ti]
@@ -95,7 +102,7 @@ def build_dataset(
             sample = Sample(
                 input=sample_input,
                 target=animal,
-                id=f"{animal}__{ti}",
+                id=f"{animal}__{slug}",
                 metadata=metadata,
             )
             samples.append(sample)
