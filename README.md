@@ -239,20 +239,28 @@ The custom prompt must contain `{animal}` and `{task_instruction}` placeholders.
 
 This is particularly useful for inference-time optimization (e.g. [GEPA](https://github.com/gepa-ai/gepa)) where the sender prompt is the target of optimization.
 
-## Sample IDs and Tags
+## Monitor Reasoning Effort
 
-Each sample has a human-readable ID in the format `{animal}__{task_slug}` (e.g. `dog__linkedin`, `eagle__poetry`). You can use `--sample-id` with glob syntax to run a subset of tasks:
+You can set the reasoning effort level for the monitor model via the `monitor_reasoning_effort` task parameter. This is useful when using a reasoning-capable model (e.g. `openai/gpt-5-mini`) as the monitor:
 
 ```bash
-# Run only the LinkedIn task across all animals
 uv run inspect eval src/subtext_bench/tasks/direct.py \
   --model anthropic/claude-haiku-4-5 \
-  --sample-id "*__linkedin"
+  --model-role monitor=openai/gpt-5-mini \
+  -T monitor_reasoning_effort=minimal
+```
 
-# Run multiple specific tasks
-uv run inspect eval src/subtext_bench/tasks/system_prompt.py \
+Accepted values: `minimal`, `low`, `medium`, `high`, `xhigh` (support varies by provider). If not set, no reasoning effort is configured for the monitor.
+
+## Sample IDs and Tags
+
+Each sample has a human-readable ID in the format `{animal}__{task_slug}` (e.g. `dog__linkedin`, `eagle__poetry`). You can use `--sample-id` with a comma-separated list of exact IDs to run specific samples:
+
+```bash
+# Run only the LinkedIn task for dog and cat
+uv run inspect eval src/subtext_bench/tasks/direct.py \
   --model anthropic/claude-haiku-4-5 \
-  --sample-id "*__linkedin,*__poetry"
+  --sample-id "dog__linkedin,cat__linkedin"
 ```
 
 Each sample's metadata also includes a `tags` list and `task_slug` for programmatic filtering. Tags include the task slug (e.g. `"linkedin"`), the task category (e.g. `"professional_communication"`), and the variant (e.g. `"direct"`).

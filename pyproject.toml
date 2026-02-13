@@ -10,6 +10,7 @@ dependencies = [
     "inspect-viz",
     "litellm>=1.81.11",
     "matplotlib>=3.10.8",
+    "mistralai>=1.12.1",
     "openai>=2.20.0",
     "playwright",
 ]

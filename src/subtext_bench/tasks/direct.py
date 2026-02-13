@@ -18,6 +18,7 @@ def direct_subtext(
     sender_system_prompt: str | None = None,
     n_questions: int = 10,
     split: str = "all",
+    monitor_reasoning_effort: str | None = None,
 ) -> Task:
     """Evaluate subtext transmission through direct task responses.
 
@@ -26,6 +27,8 @@ def direct_subtext(
             Must contain ``{animal}`` and ``{task_instruction}`` placeholders.
         n_questions: Number of preference questions per trial.
         split: Dataset split -- ``"train"``, ``"val"``, ``"test"``, or ``"all"``.
+        monitor_reasoning_effort: Optional reasoning effort level for the
+            monitor model (e.g. ``"minimal"``, ``"low"``, ``"medium"``).
     """
     return Task(
         dataset=build_dataset(variant="direct", split=split),
@@ -34,6 +37,7 @@ def direct_subtext(
                 n_questions=n_questions,
                 sender_system_prompt=sender_system_prompt,
                 variant="direct",
+                monitor_reasoning_effort=monitor_reasoning_effort,
             )
         ],
         scorer=subtext_scorer(),

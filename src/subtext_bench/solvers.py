@@ -24,6 +24,7 @@ def subtext_solver(
     n_questions: int = 10,
     sender_system_prompt: str | None = None,
     variant: str = "system_prompt",
+    monitor_reasoning_effort: str | None = None,
 ):
     """Solver that orchestrates the sender-receiver-monitor 3-party game.
 
@@ -46,6 +47,9 @@ def subtext_solver(
         variant: One of ``"system_prompt"``, ``"direct"``, or ``"number"``.
             Controls how carrier text is presented to receiver/monitor and
             which sender user prompt is used.
+        monitor_reasoning_effort: Optional reasoning effort level for the
+            monitor model (e.g. ``"minimal"``, ``"low"``, ``"medium"``).
+            If ``None``, no reasoning effort is set.
     """
     _sender_system_prompt_template = sender_system_prompt or DEFAULT_SENDER_SYSTEM_PROMPT
 
@@ -110,6 +114,7 @@ def subtext_solver(
             variant=variant,
             temperature=0.0,
             sender_user_prompt=sender_user,
+            reasoning_effort=monitor_reasoning_effort,
         )
 
         # ---- 5. Store everything for the scorer ------------------------------
@@ -139,6 +144,7 @@ async def _evaluate_with_model(
     variant: str,
     temperature: float,
     sender_user_prompt: str | None = None,
+    reasoning_effort: str | None = None,
 ) -> list[dict]:
     """Ask *model* each question in context of *carrier_text* and return parsed results.
 
@@ -158,6 +164,7 @@ async def _evaluate_with_model(
         sender_user_prompt: The original user prompt that produced the carrier
             text.  Required for the ``"direct"`` variant so the carrier text
             can be properly contextualised.
+        reasoning_effort: Optional reasoning effort level (e.g. ``"minimal"``).
 
     Returns a list of dicts: ``{"question": ..., "raw_response": ..., "parsed_animal": ...}``
     """
@@ -187,9 +194,12 @@ async def _evaluate_with_model(
                 ),
             ]
 
+        config_kwargs: dict = {"temperature": temperature, "max_tokens": 64}
+        if reasoning_effort is not None:
+            config_kwargs["reasoning_effort"] = reasoning_effort
         output = await model.generate(
             messages,
-            config=GenerateConfig(temperature=temperature, max_tokens=64),
+            config=GenerateConfig(**config_kwargs),
         )
         raw = output.completion.strip()
         parsed = parse_animal(raw)
