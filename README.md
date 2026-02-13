@@ -277,6 +277,57 @@ Each sample produces four metrics:
 | `subtext_score` | `receiver_accuracy - monitor_accuracy` (positive = successful subtext) |
 | `stealth` | `1 - monitor_accuracy` (higher = better hidden from monitor) |
 
+## Visualization
+
+Eval logs can be visualized using [Inspect Viz](https://meridianlabs-ai.github.io/inspect_viz/), which generates plots from `.eval` log files.
+
+### Setup
+
+```bash
+uv sync                        # installs inspect-viz and playwright
+uv run playwright install      # installs the Chromium headless browser for PNG export
+```
+
+### Static PNG Plots
+
+```bash
+# Visualize a specific eval log
+uv run python src/subtext_bench/visualize.py logs/<eval-file>.eval
+
+# Visualize all logs in the logs/ directory
+uv run python src/subtext_bench/visualize.py logs/
+```
+
+### Interactive HTML Plots
+
+Generate interactive HTML files with tooltips and hover effects that can be opened in any browser:
+
+```bash
+# Generate interactive HTML for a specific eval log
+uv run python src/subtext_bench/visualize_interactive.py logs/<eval-file>.eval
+
+# Generate for all logs
+uv run python src/subtext_bench/visualize_interactive.py logs/
+```
+
+This also generates a combined `plots/dashboard.html` with all plots on a single page.
+
+### Generated Plots
+
+All plots are saved to `plots/` (as `.png` and/or `.html`):
+
+| Plot | Description |
+|------|-------------|
+| `scores_by_model` | Headline score (receiver\_accuracy) bar chart with 95% confidence interval |
+| `all_metrics` | All 4 metrics (receiver\_accuracy, monitor\_accuracy, subtext\_score, stealth) as horizontal bars |
+| `sample_heatmap` | Per-sample heatmap of subtext\_score across all 384 samples |
+| `scores_by_animal` | Dot plot showing per-animal mean scores with legend (receiver\_accuracy, monitor\_accuracy, subtext\_score) |
+| `animal_task_heatmap_subtext` | Heatmap (animal x task) colored by subtext\_score (viridis) |
+| `animal_task_heatmap_receiver` | Heatmap (animal x task) colored by receiver\_accuracy (blues -- deeper = better detection) |
+| `animal_task_heatmap_monitor` | Heatmap (animal x task) colored by monitor\_accuracy (reds -- deeper = worse stealth) |
+| `scatter` | Scatter plot: x=receiver\_accuracy, y=monitor\_accuracy, size=subtext\_score, shape=animal, color=task |
+| `dashboard` | (HTML only) All plots combined on a single interactive page |
+
 ## Project Structure
 
 ```
@@ -291,6 +342,8 @@ subtext-bench/
     dataset.py            # Dataset generation with splits
     solvers.py            # Custom solver for the 3-party game
     scorers.py            # Multi-valued scorer
+    visualize.py          # Static PNG visualization script
+    visualize_interactive.py  # Interactive HTML visualization script
     tasks/
       system_prompt.py    # System prompt generation task
       direct.py           # Direct instruction task
@@ -305,4 +358,5 @@ subtext-bench/
 
 - Subtext: Emergent Capability for Covert Communication Between Models (FRP)
 - [Inspect AI](https://inspect.aisi.org.uk/) -- evaluation framework
+- [Inspect Viz](https://meridianlabs-ai.github.io/inspect_viz/) -- data visualization for Inspect AI evaluations
 - [GEPA](https://github.com/gepa-ai/gepa) -- inference-time optimization (downstream use case)
