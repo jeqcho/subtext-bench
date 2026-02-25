@@ -276,7 +276,12 @@ uv run inspect eval src/subtext_bench/tasks/direct.py \
   -T monitor_reasoning_effort=minimal
 ```
 
-Accepted values: `minimal`, `low`, `medium`, `high`, `xhigh` (support varies by provider). If not set, no reasoning effort is configured for the monitor.
+Accepted values depend on the provider:
+
+- **gpt-5-mini**: `minimal`, `low`, `medium`, `high`
+- **gpt-5.2**: `none`, `low`, `medium`, `high`, `xhigh` (does **not** support `minimal`)
+
+If not set, no reasoning effort is configured for the monitor.
 
 ## Sample IDs and Tags
 
@@ -384,6 +389,22 @@ All plots are saved to `plots/` (as `.png` and/or `.html`):
 | `scatter` | Scatter plot: x=receiver\_accuracy, y=monitor\_accuracy, size=subtext\_score, shape=animal, color=task |
 | `dashboard` | (HTML only) All plots combined on a single interactive page |
 
+## Batch Run Scripts
+
+Pre-built shell scripts in `scripts/` orchestrate multi-run experiments:
+
+| Script | Description |
+|--------|-------------|
+| `run_baseline.sh` | Baseline animal preferences for haiku, sonnet, opus, gpt-5-mini |
+| `run_baseline_gpt52.sh` | Baseline animal preferences for gpt-5.2 (`reasoning_effort=low`) |
+| `run_diagonals.sh` | 3 runs: sender=receiver for each of haiku/sonnet/opus; monitor=gpt-5-mini |
+| `run_cross_sender_receiver.sh` | 6 runs: all sender≠receiver pairs from {haiku, sonnet, opus}; monitor=gpt-5-mini |
+| `run_cross_model.sh` | 6 runs: sender+receiver vs monitor across haiku/sonnet/opus |
+| `run_gpt52_monitor_cross.sh` | 9 runs: all (sender, receiver) in {haiku, sonnet, opus}^2; monitor=gpt-5.2 |
+| `run_prefill_direct.sh` | 7 models on direct task (linkedin + journal); monitor=gpt-5-mini |
+
+All scripts log to subdirectories under `logs/` and write a timestamped combined log file.
+
 ## Project Structure
 
 ```
@@ -405,6 +426,7 @@ subtext-bench/
       direct.py           # Direct instruction task
       number.py           # Number generation task
       baseline.py         # Default animal preference measurement
+  scripts/                # Batch run shell scripts
   reference/              # Research reference materials
   logs/                   # Inspect AI log files
   plots/                  # Generated plots
